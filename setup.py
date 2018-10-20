@@ -1,3 +1,5 @@
+#This needs some help :)
+
 from setuptools import setup
 
 setup(name='ericnuno',
