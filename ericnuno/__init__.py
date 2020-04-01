@@ -62,38 +62,45 @@ class rest:
     def verify_uri(self, uri):
         """ Basic verification of uri """
         if not uri.startswith("http://") and not uri.startswith("https://"):
-            print("====> WARNING: Invalid looking URI,not seeing http:// or https://")         
+            print("====> WARNING: Invalid looking URI,not seeing http:// or https://")
 
     def get(self, pretty='no'):
-        if self.verify:
-            response = requests.get(self.uri, headers=self.header, verify=self.verify, auth=self.creds)
-        elif not self.verify: 
-            response = requests.get(self.uri, headers=self.header, verify=self.verify)
-
-        return self.json_translate(response, pretty)
-
+        auth = dict(auth=self.creds) if self.verify else {}
+        try:
+            response = requests.get(self.uri, headers=self.header, verify=self.verify, **auth)
+            return self.handle_response(response, pretty)
+        except sys.exc_info()[0] as err:
+            print('Request failed:', err)
 
     def post(self, body, pretty='no'):
-        if self.verify:
-            response = requests.post(self.uri, headers=self.header, data=body, verify=self.verify, auth=self.creds)
-        elif not self.verify: 
-            response = requests.post(self.uri, headers=self.header, data=body, verify=self.verify)
-        
-        return self.json_translate(response, pretty)
+        auth = dict(auth=self.creds) if self.verify else {}
+        try:
+            response = requests.post(self.uri, headers=self.header, data=body, verify=self.verify, **auth)
+            return self.handle_response(response, pretty)
+        except sys.exc_info()[0] as err:
+            print('Request failed:', err)
+
+    def handle_response(self, response, pretty):
+        success_status_codes = [200, 201, 202, 203, 204, 205, 206]
+        if response.status_code in success_status_codes:
+            return self.json_translate(response, pretty)
+        else:
+            print("Server responded with status code: " + str(response.status_code), response.raise_for_status())
 
     def json_translate(self, response, pretty):
-
         # Turn the response into readable data using JSON module
         try:
+            # calling json.loads before pretty check allows us to validate json format
             regularJSON = json.loads(response.text)
-            prettyJSON = json.dumps(regularJSON, indent=4, sort_keys=True)
-        except:
-            return(response)
-
-        if pretty.lower() == 'yes':
-            return prettyJSON
-        elif pretty.lower() == 'no':
-            return regularJSON
+            if pretty.lower() == 'yes':
+                # only need to prettify the json if necessary
+                prettyJSON = json.dumps(regularJSON, indent=4, sort_keys=True)
+                return prettyJSON
+            elif pretty.lower() == 'no':
+                return regularJSON
+                
+        except ValueError as err:
+            print("Response is not valid JSON\n", err)
 
 
 class COM_Manager:
