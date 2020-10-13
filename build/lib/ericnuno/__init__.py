@@ -13,6 +13,7 @@ from pyVmomi import vim
 from pyVim import *
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import csv
 
 def FindVMIP(IP, usern, passw, vIP="10.160.111.161"):
 
@@ -492,3 +493,11 @@ def longfiles(parentdir, extensions=[]):
                         TotalFiles.append(os.path.join(root, filename))
 
     return TotalFiles
+
+def readCsv(csvFile):
+    with open(csvFile) as openFile:
+        #Automatically read in header values as keys
+        reader = csv.DictReader(openFile)
+        data = [r for r in reader]
+    #Return OrderedDict object
+    return data
